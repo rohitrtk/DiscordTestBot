@@ -10,6 +10,7 @@ COMMAND_DEL_WORD = '$dw'
 COMMAND_GET_WORDS = "$gw"
 COMMAND_ADD_USER = '$au'
 COMMAND_DEL_USER = '$du'
+COMMAND_GET_USERS = '$gu'
 
 # Databases
 DATABASE_WORDS = 'words'
@@ -53,9 +54,9 @@ class DWC_Client(discord.Client):
       # Get the database and append the new word
       words = db[DATABASE_WORDS]
     
-    if word in words:
-      await self.send_message(channel, "{0} is already in the database".format(word))
-      return
+      if word in words:
+        await self.send_message(channel, "{0} is already in the database".format(word))
+        return
 
       words.append(word)
 
@@ -91,14 +92,11 @@ class DWC_Client(discord.Client):
   async def get_words(self, message):
     words = db[DATABASE_WORDS]
     channel = message.channel
-      
+    length = len(words)
+
     # Message for no words in the database
-    if len(words) == 0:
+    if length == 0:
       await self.send_message(channel, "No words in database")
-    # Message for 1 word in the database
-    elif len(words) == 1:
-      await self.send_message(channel, '1 word found: ' + words[0])
-    # Message for multiple words in the database
     else:
       s = ""
       for i in range(0, len(words)):
@@ -106,7 +104,7 @@ class DWC_Client(discord.Client):
         if i != len(words) - 1:
           s += ', '
       
-      await self.send_message(channel, '{0} words found: '.format(len(words)) + s)
+      await self.send_message(channel, '{0} {1} found: '.format(length, 'word' if length == 1 else 'words') + s)
 
   """
   Database key "users" contains a list.
@@ -155,6 +153,32 @@ class DWC_Client(discord.Client):
       await self.send_message(channel, 'User {0} does not exist in the database'.format(user))
 
   """
+  Gets all users from the "users" database
+  """
+  async def get_users(self, message):
+    channel = message.channel
+    
+    # If there is no database, don't do anything
+    if DATABASE_USERS not in db.keys():
+      await self.send_message(channel, 'No database found')
+      return
+
+    users = db[DATABASE_USERS]
+    length = len(users)
+
+    if length == 0:
+      await self.send_message(channel, 'No users in database')
+    else:
+      s, i, = '', 0
+      for k in users.keys():
+        s += k
+        if i != length - 1:
+          s += ', '
+        i += 1
+
+      await self.send_message(channel, '{0} {1} found: '.format(length, 'user' if length == 1 else 'users') + s)
+
+  """
   Checks if the message is a command. If it is, run the appropriate command.
   Returns True if the message was a command. Returns False otherwise.
   """
@@ -194,6 +218,10 @@ class DWC_Client(discord.Client):
     elif command == COMMAND_DEL_USER:
       await self.delete_user(message)
       print('$du')
+    # Get users
+    elif command == COMMAND_GET_USERS:
+      await self.get_users(message)
+      print('$gu')
 
 intents = discord.Intents.default()
 intents.members = True
