@@ -33,7 +33,10 @@ class DWC_Client(discord.Client):
         
     if message.content[0] is COMMAND_IDENTIFIER:
       await self.run_command(message)
-        
+      return
+    
+    await self.check_message(message)
+
     #for word in words:
     #  if word in message.content:
     #    text = '{0.author} said {1}'
@@ -41,6 +44,34 @@ class DWC_Client(discord.Client):
 
   async def send_message(self, channel, message_str):
     await channel.send(message_str)
+
+  """
+  Checks if the user has said a tracked word
+  """
+  async def check_message(self, message):
+    channel = message.channel
+    content = message.content
+    words_said = content.split()    
+    
+    author = str(message.author)
+    users = db[DATABASE_USERS]
+
+    if author not in users.keys():
+      return
+
+    words = db[DATABASE_WORDS]
+
+    for word in words_said:
+      if word in words:
+        u = users[author]
+
+        if word in u.keys():
+          u[word] += 1
+        else:
+          u[word] = 1
+        
+        output_message = '{0} has said {1} {2} times'.format(author, word, u[word])
+        await self.send_message(channel, output_message)
 
   """
   Database key "words" contains a list.
